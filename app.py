@@ -72,24 +72,9 @@ def load_audio_from_drive(drive_url):
         st.error(f"音声読み込みエラー: {e}")
         return None
 
-# 形態素解析
-@st.cache_resource
-def get_tokenizer():
-    """形態素解析器を初期化"""
-    try:
-        import fugashi
-        return fugashi.Tagger()
-    except ImportError:
-        return None
-
 def tokenize_text(text):
-    """テキストを単語に分割"""
-    tagger = get_tokenizer()
-    if tagger:
-        words = [word.surface for word in tagger(text)]
-        return words
-    else:
-        return list(text)
+    """テキストを単語に分割（簡易版：1文字ずつ）"""
+    return list(text)
 
 # セッション状態の初期化
 if 'current_idx' not in st.session_state:
