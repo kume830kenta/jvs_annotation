@@ -8,10 +8,10 @@ import re
 
 st.set_page_config(page_title="JVS強調アノテーション", layout="wide")
 
-# CSSで全体を圧縮
+# CSSで全体を圧縮（既存のst.markdown部分を置き換え）
 st.markdown("""
 <style>
-    .block-container {padding-top: 1rem; padding-bottom: 1rem;}
+    .block-container {padding-top: 2rem; padding-bottom: 1rem;}
     h1 {font-size: 1.5rem; margin-bottom: 0.5rem;}
     h2 {font-size: 1.2rem; margin-bottom: 0.3rem;}
     h3 {font-size: 1.1rem; margin-bottom: 0.3rem;}
