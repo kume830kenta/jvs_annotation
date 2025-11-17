@@ -101,7 +101,9 @@ if 'selecting' not in st.session_state:
 if 'select_start' not in st.session_state:
     st.session_state.select_start = None
 if 'page' not in st.session_state:
-    st.session_state.page = 'instruction'  # 最初は説明ページ
+    st.session_state.page = 'instruction'
+if 'current_sheet' not in st.session_state:
+    st.session_state.current_sheet = None
 
 # サイドバー
 st.sidebar.title("⚙️ 設定")
@@ -112,25 +114,37 @@ annotator_name = st.sidebar.text_input(
     help="あなたの名前またはID"
 )
 
-# Google SheetsのURL入力
+# Google Sheetsデータセット選択
 st.sidebar.subheader("📊 データソース")
-sheet_url = st.sidebar.text_input(
-    "Google SheetsのURL",
-    value="",
-    help="スプレッドシートを「リンクを知っている全員」に公開してください",
-    placeholder="https://docs.google.com/spreadsheets/d/..."
-)
 
-if st.sidebar.button("🔄 データを読み込む", type="primary"):
-    if sheet_url:
-        with st.spinner("データを読み込み中..."):
-            data = load_data_from_sheets(sheet_url)
+# 事前定義されたURL
+sheet_urls = {
+    "JVS①": "https://docs.google.com/spreadsheets/d/1KqfyOWJoHR7V1Bztv_8H5dUeLqf2kCZ_0tdmXPVCPoc/edit?usp=sharing",
+    "JVS②": "https://docs.google.com/spreadsheets/d/1n4-bXPp0kGuOZ9ugoYrcm2JVn5xGRkrbQrCqyQ0ksMA/edit?usp=sharing",
+    "JVS③": "https://docs.google.com/spreadsheets/d/1Z0XD71qcbUh7JzJUs0Dj1Kp3HxAxvR95OQiSB3rix1o/edit?usp=sharing",
+    "JVS④": "https://docs.google.com/spreadsheets/d/1gyCKuFvnkAcpWG1GTi17-pjI9k1EwEpMj8sPD6ZxZhI/edit?usp=sharing",
+    "JVS⑤": "https://docs.google.com/spreadsheets/d/1e5aqmRqit9mH3iVJyB_jjqwiAr27eIAoUl-LUqULzPs/edit?usp=sharing"
+}
+
+st.sidebar.markdown("**データセットを選択:**")
+
+# ボタンを縦に並べる
+for name, url in sheet_urls.items():
+    if st.sidebar.button(name, use_container_width=True):
+        with st.spinner(f"{name}のデータを読み込み中..."):
+            data = load_data_from_sheets(url)
             if data:
                 st.session_state.data = data
                 st.session_state.data_loaded = True
-                st.sidebar.success(f"✅ {len(data)}件のデータを読み込みました")
-    else:
-        st.sidebar.error("Google SheetsのURLを入力してください")
+                st.session_state.current_sheet = name
+                st.session_state.current_idx = 0  # 最初から開始
+                st.session_state.annotations = []  # アノテーションリセット
+                st.sidebar.success(f"✅ {name}: {len(data)}件読み込み完了")
+                st.rerun()
+
+# 現在読み込まれているデータセットを表示
+if st.session_state.data_loaded and st.session_state.current_sheet:
+    st.sidebar.info(f"📂 現在: {st.session_state.current_sheet}")
 
 # ページ切り替え
 if st.session_state.page == 'instruction':
@@ -186,16 +200,15 @@ if st.session_state.page == 'instruction':
     ## 作業時間の目安
     
     - 1音声あたり: 約30秒〜1分
-    - 合計500音声: 約4〜8時間
+    - 各データセット100音声: 約1〜2時間
     
     ---
     
     ## 準備
     
     1. 左サイドバーにアノテーター名を入力
-    2. Google SheetsのURLを貼り付け
-    3. 「データを読み込む」をクリック
-    4. 下のボタンでアノテーション開始
+    2. JVS①〜⑤のいずれかをクリック
+    3. 下のボタンでアノテーション開始
     
     """)
     
@@ -362,6 +375,7 @@ else:
                     
                     annotation = {
                         'annotator': annotator_name,
+                        'dataset': st.session_state.current_sheet,
                         'filename': item.get('filename', 'N/A'),
                         'speaker': item.get('speaker', 'N/A'),
                         'text': text,
@@ -420,7 +434,7 @@ else:
                 )
     
     else:
-        st.info("👈 左のサイドバーからデータを読み込んでください")
+        st.info("👈 左のサイドバーからデータセットを選択してください")
 
 st.markdown("---")
 st.caption("JVS強調アノテーションツール v1.0")
