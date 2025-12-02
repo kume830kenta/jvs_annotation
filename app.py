@@ -152,42 +152,50 @@ if 'current_sheet' not in st.session_state:
 # サイドバー
 st.sidebar.title("⚙️ 設定")
 
-# アノテーター情報入力
-st.sidebar.subheader("👤 アノテーター情報")
+# ページによって表示内容を変更
+if st.session_state.page == 'instruction':
+    # 説明ページ：アノテーター情報を表示
+    st.sidebar.subheader("👤 アノテーター情報")
 
-annotator_name = st.sidebar.text_input(
-    "名前",
-    value="",
-    placeholder="ここに名前を入力してください",
-    help="あなたの名前またはID"
-)
+    annotator_name = st.sidebar.text_input(
+        "名前",
+        value="",
+        placeholder="ここに名前を入力してください",
+        help="あなたの名前またはID"
+    )
 
-gender = st.sidebar.selectbox(
-    "性別",
-    options=["選択してください", "男性", "女性", "選択しない"],
-    help="性別を選択してください"
-)
+    gender = st.sidebar.selectbox(
+        "性別",
+        options=["選択してください", "男性", "女性", "選択しない"],
+        help="性別を選択してください"
+    )
 
-age = st.sidebar.number_input(
-    "年齢",
-    min_value=0,
-    max_value=120,
-    value=0,
-    step=1,
-    help="年齢を入力してください"
-)
+    age = st.sidebar.number_input(
+        "年齢",
+        min_value=0,
+        max_value=120,
+        value=0,
+        step=1,
+        help="年齢を入力してください"
+    )
 
-# 入力チェック
-info_complete = (
-    annotator_name and annotator_name.strip() != "" and
-    gender != "選択してください" and
-    age > 0
-)
+    # 入力チェック
+    info_complete = (
+        annotator_name and annotator_name.strip() != "" and
+        gender != "選択してください" and
+        age > 0
+    )
 
-if not info_complete:
-    st.sidebar.warning("⚠️ 全ての情報を入力してください")
+    if not info_complete:
+        st.sidebar.warning("⚠️ 全ての情報を入力してください")
 
-st.sidebar.markdown("---")
+    st.sidebar.markdown("---")
+else:
+    # アノテーションページ：アノテーター情報を取得（表示はしない）
+    annotator_name = st.session_state.get('annotator_name', '')
+    gender = st.session_state.get('gender', '')
+    age = st.session_state.get('age', 0)
+    info_complete = True
 
 # Google Sheetsデータセット選択
 st.sidebar.subheader("📊 データソース")
@@ -198,7 +206,7 @@ sheet_urls = {
     "JVS②": "https://docs.google.com/spreadsheets/d/1eR4I4oa3vhz_6FToVIbFT2vGsYBMx-kpfiNQHDx4C5c/edit?usp=sharing",
     "JVS③": "https://docs.google.com/spreadsheets/d/1TVBEF8txyznZapG4mt5IeLSM7laORdr3eJkCjVLaH2U/edit?usp=sharing",
     "JVS④": "https://docs.google.com/spreadsheets/d/1Jr7lnAkAdCrQ8qcHvyOznm-usx8aIFawjWjvDh_fOko/edit?usp=sharing",
-    "JVS⑤": "https://docs.google.com/spreadsheets/d/1wlFA2UvCYnu_LqNdV8yzcGgcckifwSD6wZ4FJKe7OOE/edit?usp=sharing"
+    "JVS⑤": "https://docs.google.com/spreadsheets/d/19-WiHrWYTBzzOO6Vime4RFtc9kiYF7IrzOSnOE-A19E/edit?usp=sharing"
 }
 
 st.sidebar.markdown("**データセットを選択:**")
@@ -229,11 +237,8 @@ if st.session_state.page == 'instruction':
     st.markdown("""
     ## 作業の目的
     
-    この作業では、音声を聴いて、**音声的に強調されている部分**を特定し、文字を選択することでラベル付けを行います。
-                
-    音声は**何回でも**聴くことができます。
-      
-
+    音声を聴いて、**音声的に強調されている部分**を特定し、ラベル付けを行います。
+    
     ---
     
     ## 強調とは？
@@ -245,11 +250,11 @@ if st.session_state.page == 'instruction':
     
     ## 判断基準
     
-    **わずかでも直感的に他の単語よりも強調されている**と感じる部分があれば、ラベル付けしてください。
+    **直感的に他の単語よりも強調されている**と感じる部分があれば、ラベル付けしてください。
                 
     また、以下の要素のうち**どれか１つでも**当てはまれば強調としてください。
                 
-    **どれにも当てはまらない場合でも**、わずかでも強調されていると感じたならばラベル付けしてください。
+    **どれにも当てはまらない場合でも**、強調されていると感じたならばラベル付けしてください。
                 
     1. **音量が大きい**
     2. **ピッチが高い（または変化が大きい）**
@@ -266,7 +271,7 @@ if st.session_state.page == 'instruction':
 
     ## データセットについて
 
-    - **全体**: **5つのデータセット**(合計500音声)
+    - **全体**: 500音声（5つのデータセットに分割）
     - **各データセット**: 100音声ずつ
     - **作業方法**: 
         - 各データセット内の100音声は連続してラベル付けを行ってください
@@ -274,7 +279,7 @@ if st.session_state.page == 'instruction':
         - 作業を再開する際は、アノテーター情報を再度入力してください
                 
     ---
-                
+    
     ## ラベル付けについて
 
     - **文字数に制限はありません**
@@ -284,26 +289,40 @@ if st.session_state.page == 'instruction':
         - 飛び飛びで選択しても大丈夫です
 
     **例:**
+    """)
+    
+    # HTMLで赤文字を表示
+    st.markdown("""
+    <div style='font-size: 18px; line-height: 2;'>
 
-    1. 連続した選択: 「今日はいい[天気]ですね」
-    2. 1文字のみ: 「今日[は]いい天気ですね」
-    3. 複数箇所(飛び飛び): 「[今日]はいい[天気]ですね」
+    1. 連続した選択: 今日はいい<span style='color: red; font-weight: bold;'>[天気]</span>ですね
 
-    ---            
+    2. 1文字のみ: 今日はいい<span style='color: red; font-weight: bold;'>[天]</span>気ですね
+
+    3. 飛び飛びの選択: <span style='color: red; font-weight: bold;'>[今]</span><span style='color: red; font-weight: bold;'>[日]</span>はいい<span style='color: red; font-weight: bold;'>[天]</span><span style='color: red; font-weight: bold;'>[気]</span>ですね
+
+    4. 複数箇所: <span style='color: red; font-weight: bold;'>[今日]</span>はいい<span style='color: red; font-weight: bold;'>[天気]</span>ですね
+
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("""
+    
+    ---
     
     ## 作業の流れ
     
-    1. 再生ボタンを押して音声を聴く
+    1. 音声を聴く
     2. 強調されている文字を選択
        - **通常モード**: 1文字ずつクリック
-       - **範囲選択モード**: 複数選択
+       - **範囲選択モード**: 開始→終了で複数選択
     3. 「保存して次へ」で次の音声へ
     
     ---
     
     ## 注意事項
-                
-    - なるべく静かな環境で、ヘッドホンまたはイヤホンを着用して作業を行なってください     
+    
+    - 強調がない場合は何も選択せずに「保存して次へ」
     - 迷った場合は「全解除」で最初からやり直せます
     - 「保存して次へ」を押すたびに結果がクラウド上に保存されます
     
@@ -327,6 +346,10 @@ if st.session_state.page == 'instruction':
         st.button("📝 アノテーション作業を開始", type="primary", use_container_width=True, disabled=True)
     else:
         if st.button("📝 アノテーション作業を開始", type="primary", use_container_width=True):
+            # アノテーター情報をセッションに保存
+            st.session_state.annotator_name = annotator_name
+            st.session_state.gender = gender
+            st.session_state.age = age
             st.session_state.page = 'annotation'
             st.rerun()
 
@@ -545,4 +568,4 @@ else:
         st.info("👈 左のサイドバーからデータセットを選択してください")
 
 st.markdown("---")
-st.caption("JVS強調アノテーションツール v1.3")
+st.caption("JVS強調アノテーションツール v1.4")
