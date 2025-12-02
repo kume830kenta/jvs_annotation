@@ -222,6 +222,10 @@ for name, url in sheet_urls.items():
                 st.session_state.current_sheet = name
                 st.session_state.current_idx = 0
                 st.session_state.annotations = []
+                # 選択状態をリセット
+                st.session_state.selected_words = set()
+                st.session_state.selecting = False
+                st.session_state.select_start = None
                 st.sidebar.success(f"✅ {name}: {len(data)}件読み込み完了")
                 st.rerun()
 
@@ -376,158 +380,163 @@ else:
         st.sidebar.metric("完了", completed)
         st.sidebar.progress(current / total)
         
-        # 現在のアイテム
-        item = data[st.session_state.current_idx]
-        
-        # メインエリア（圧縮版）
-        st.markdown("### 🎯 強調アノテーション")
-        
-        # 音声再生エリア（コンパクト）
-        col1, col2 = st.columns([4, 1])
-        
-        with col1:
-            audio_url = item.get('audioUrl') or item.get('audio_url')
-            if audio_url:
-                audio_bytes = load_audio_from_drive(audio_url)
-                if audio_bytes:
-                    st.audio(audio_bytes, format='audio/wav')
-                else:
-                    st.error("音声読み込み失敗")
-        
-        with col2:
-            st.caption(f"**{item.get('speaker', 'N/A')}**")
-            st.caption(f"{item.get('filename', 'N/A')}")
-        
-        # テキスト表示と単語選択
-        text = item.get('text', '')
-        if text:
-            words = tokenize_text(text)
+        # 完了画面の判定
+        if st.session_state.current_idx >= total:
+            # 完了画面を表示（ボタンなし）
+            st.success("🎉 このデータセットのアノテーションは完了です。お疲れ様でした。")
+            st.info("別のデータセットを開始する場合は、左サイドバーから選択してください。")
+        else:
+            # 現在のアイテム
+            item = data[st.session_state.current_idx]
             
-            # 選択モード切り替え（コンパクト）
-            cols = st.columns([1, 1, 3])
+            # メインエリア（圧縮版）
+            st.markdown("### 🎯 強調アノテーション")
             
-            with cols[0]:
-                if st.button("🎯 範囲選択", use_container_width=True, type="primary" if st.session_state.selecting else "secondary"):
-                    st.session_state.selecting = not st.session_state.selecting
-                    if not st.session_state.selecting:
-                        st.session_state.select_start = None
-                    st.rerun()
+            # 音声再生エリア（コンパクト）
+            col1, col2 = st.columns([4, 1])
             
-            with cols[1]:
-                if st.button("🔄 全解除", use_container_width=True):
-                    st.session_state.selected_words = set()
-                    st.session_state.selecting = False
-                    st.session_state.select_start = None
-                    st.rerun()
+            with col1:
+                audio_url = item.get('audioUrl') or item.get('audio_url')
+                if audio_url:
+                    audio_bytes = load_audio_from_drive(audio_url)
+                    if audio_bytes:
+                        st.audio(audio_bytes, format='audio/wav')
+                    else:
+                        st.error("音声読み込み失敗")
             
-            # モード表示（1行で）
-            if st.session_state.selecting:
-                if st.session_state.select_start is None:
-                    st.caption("📍 開始位置をクリック")
-                else:
-                    st.caption(f"📍 「{words[st.session_state.select_start]}」から選択中 → 終了位置をクリック")
-            else:
-                st.caption("💡 クリックで選択・解除")
+            with col2:
+                st.caption(f"**{item.get('speaker', 'N/A')}**")
+                st.caption(f"{item.get('filename', 'N/A')}")
             
-            # 単語選択UI
-            words_per_row = 20
-            for row_start in range(0, len(words), words_per_row):
-                row_words = words[row_start:row_start + words_per_row]
-                cols = st.columns(len(row_words))
-                
-                for col_idx, word in enumerate(row_words):
-                    idx = row_start + col_idx
-                    with cols[col_idx]:
-                        is_selected = idx in st.session_state.selected_words
-                        
-                        # 範囲選択モード
-                        if st.session_state.selecting:
-                            if st.button(word, key=f"word_{idx}", type="primary" if is_selected else "secondary", use_container_width=True):
-                                if st.session_state.select_start is None:
-                                    st.session_state.select_start = idx
-                                    st.rerun()
-                                else:
-                                    start = min(st.session_state.select_start, idx)
-                                    end = max(st.session_state.select_start, idx)
-                                    for i in range(start, end + 1):
-                                        st.session_state.selected_words.add(i)
-                                    st.session_state.selecting = False
-                                    st.session_state.select_start = None
-                                    st.rerun()
-                        # 通常モード
-                        else:
-                            if st.button(word, key=f"word_{idx}", type="primary" if is_selected else "secondary", use_container_width=True):
-                                if idx in st.session_state.selected_words:
-                                    st.session_state.selected_words.remove(idx)
-                                else:
-                                    st.session_state.selected_words.add(idx)
-                                st.rerun()
-            
-            # 選択結果のプレビュー（コンパクト）
-            st.markdown("**選択結果:**")
-            
-            preview_html = "<div style='font-size: 20px; line-height: 1.5; margin-bottom: 0.5rem;'>"
-            for idx, word in enumerate(words):
-                if idx in st.session_state.selected_words:
-                    preview_html += f"<span style='color: red; font-weight: bold;'>[{word}]</span>"
-                else:
-                    preview_html += word
-            preview_html += "</div>"
-            
-            st.markdown(preview_html, unsafe_allow_html=True)
-            
-            if st.session_state.selected_words:
-                selected_list = [words[i] for i in sorted(st.session_state.selected_words)]
-                st.caption(f"✓ {', '.join(selected_list)}")
-        
-        # ボタンエリア（前へボタン削除）
-        if st.button("💾 保存して次へ", type="primary", use_container_width=True):
+            # テキスト表示と単語選択
+            text = item.get('text', '')
             if text:
-                selected_indices = sorted(list(st.session_state.selected_words))
-                emphasized_words = [words[i] for i in selected_indices]
+                words = tokenize_text(text)
                 
-                bracketed_text = ""
+                # 選択モード切り替え（コンパクト）
+                cols = st.columns([1, 1, 3])
+                
+                with cols[0]:
+                    if st.button("🎯 範囲選択", use_container_width=True, type="primary" if st.session_state.selecting else "secondary"):
+                        st.session_state.selecting = not st.session_state.selecting
+                        if not st.session_state.selecting:
+                            st.session_state.select_start = None
+                        st.rerun()
+                
+                with cols[1]:
+                    if st.button("🔄 全解除", use_container_width=True):
+                        st.session_state.selected_words = set()
+                        st.session_state.selecting = False
+                        st.session_state.select_start = None
+                        st.rerun()
+                
+                # モード表示（1行で）
+                if st.session_state.selecting:
+                    if st.session_state.select_start is None:
+                        st.caption("📍 開始位置をクリック")
+                    else:
+                        st.caption(f"📍 「{words[st.session_state.select_start]}」から選択中 → 終了位置をクリック")
+                else:
+                    st.caption("💡 クリックで選択・解除")
+                
+                # 単語選択UI
+                words_per_row = 20
+                for row_start in range(0, len(words), words_per_row):
+                    row_words = words[row_start:row_start + words_per_row]
+                    cols = st.columns(len(row_words))
+                    
+                    for col_idx, word in enumerate(row_words):
+                        idx = row_start + col_idx
+                        with cols[col_idx]:
+                            is_selected = idx in st.session_state.selected_words
+                            
+                            # 範囲選択モード
+                            if st.session_state.selecting:
+                                if st.button(word, key=f"word_{idx}", type="primary" if is_selected else "secondary", use_container_width=True):
+                                    if st.session_state.select_start is None:
+                                        st.session_state.select_start = idx
+                                        st.rerun()
+                                    else:
+                                        start = min(st.session_state.select_start, idx)
+                                        end = max(st.session_state.select_start, idx)
+                                        for i in range(start, end + 1):
+                                            st.session_state.selected_words.add(i)
+                                        st.session_state.selecting = False
+                                        st.session_state.select_start = None
+                                        st.rerun()
+                            # 通常モード
+                            else:
+                                if st.button(word, key=f"word_{idx}", type="primary" if is_selected else "secondary", use_container_width=True):
+                                    if idx in st.session_state.selected_words:
+                                        st.session_state.selected_words.remove(idx)
+                                    else:
+                                        st.session_state.selected_words.add(idx)
+                                    st.rerun()
+                
+                # 選択結果のプレビュー（コンパクト）
+                st.markdown("**選択結果:**")
+                
+                preview_html = "<div style='font-size: 20px; line-height: 1.5; margin-bottom: 0.5rem;'>"
                 for idx, word in enumerate(words):
                     if idx in st.session_state.selected_words:
-                        bracketed_text += f"[{word}]"
+                        preview_html += f"<span style='color: red; font-weight: bold;'>[{word}]</span>"
                     else:
-                        bracketed_text += word
+                        preview_html += word
+                preview_html += "</div>"
                 
-                annotation = {
-                    'annotator': annotator_name,
-                    'gender': gender,
-                    'age': age,
-                    'dataset': st.session_state.current_sheet,
-                    'filename': item.get('filename', 'N/A'),
-                    'speaker': item.get('speaker', 'N/A'),
-                    'text': text,
-                    'emphasized_words': ', '.join(emphasized_words) if emphasized_words else '',
-                    'emphasized_indices': ', '.join(map(str, selected_indices)) if selected_indices else '',
-                    'annotated_text': bracketed_text,
-                    'has_emphasis': len(emphasized_words) > 0,
-                    'timestamp': datetime.now().isoformat()
-                }
+                st.markdown(preview_html, unsafe_allow_html=True)
                 
-                # ローカルに保存
-                st.session_state.annotations.append(annotation)
-                
-                # Google Sheetsに保存
-                if save_to_sheets(annotation):
-                    st.success("✅ 保存しました（Google Sheetsに記録）")
-                else:
-                    st.warning("⚠️ ローカルには保存されましたが、Google Sheets保存に失敗しました")
-                
-                if st.session_state.current_idx < total - 1:
+                if st.session_state.selected_words:
+                    selected_list = [words[i] for i in sorted(st.session_state.selected_words)]
+                    st.caption(f"✓ {', '.join(selected_list)}")
+            
+            # ボタンエリア
+            # 最後の音声かどうかをチェック
+            is_last_item = st.session_state.current_idx >= total - 1
+            
+            button_label = "💾 保存して完了" if is_last_item else "💾 保存して次へ"
+            
+            if st.button(button_label, type="primary", use_container_width=True):
+                if text:
+                    selected_indices = sorted(list(st.session_state.selected_words))
+                    emphasized_words = [words[i] for i in selected_indices]
+                    
+                    bracketed_text = ""
+                    for idx, word in enumerate(words):
+                        if idx in st.session_state.selected_words:
+                            bracketed_text += f"[{word}]"
+                        else:
+                            bracketed_text += word
+                    
+                    annotation = {
+                        'annotator': annotator_name,
+                        'gender': gender,
+                        'age': age,
+                        'dataset': st.session_state.current_sheet,
+                        'filename': item.get('filename', 'N/A'),
+                        'speaker': item.get('speaker', 'N/A'),
+                        'text': text,
+                        'emphasized_words': ', '.join(emphasized_words) if emphasized_words else '',
+                        'emphasized_indices': ', '.join(map(str, selected_indices)) if selected_indices else '',
+                        'annotated_text': bracketed_text,
+                        'has_emphasis': len(emphasized_words) > 0,
+                        'timestamp': datetime.now().isoformat()
+                    }
+                    
+                    # ローカルに保存
+                    st.session_state.annotations.append(annotation)
+                    
+                    # Google Sheetsに保存
+                    if save_to_sheets(annotation):
+                        st.success("✅ 保存しました（Google Sheetsに記録）")
+                    else:
+                        st.warning("⚠️ ローカルには保存されましたが、Google Sheets保存に失敗しました")
+                    
                     st.session_state.current_idx += 1
                     st.session_state.selected_words = set()
                     st.session_state.selecting = False
                     st.session_state.select_start = None
                     st.rerun()
-                else:
-                    # 完了画面を表示
-                    st.balloons()
-                    st.success("🎉 このデータセットのアノテーションは完了です。お疲れ様でした。")
-                    st.info("別のデータセットを開始する場合は、左サイドバーから選択してください。")
         
         # サイドバー：エクスポート
         st.sidebar.markdown("---")
@@ -568,4 +577,4 @@ else:
         st.info("👈 左のサイドバーからデータセットを選択してください")
 
 st.markdown("---")
-st.caption("JVS強調アノテーションツール v1.4")
+st.caption("JVS強調アノテーションツール v1.5")
