@@ -8,7 +8,7 @@ import re
 
 st.set_page_config(page_title="JVS強調アノテーション", layout="wide")
 
-# CSSで全体を圧縮（既存のst.markdown部分を置き換え）
+# CSSで全体を圧縮
 st.markdown("""
 <style>
     .block-container {padding-top: 2rem; padding-bottom: 1rem;}
@@ -18,6 +18,9 @@ st.markdown("""
     .stButton button {padding: 0.25rem 0.5rem;}
 </style>
 """, unsafe_allow_html=True)
+
+# 結果保存用SheetsのURL
+RESULT_SHEET_URL = "https://docs.google.com/spreadsheets/d/1BdWSIIoLxYF4N7bUSsDfTJ5zYChLYVV4RSmf0RyL-no/edit?gid=0#gid=0"
 
 # Google Drive URLを直接ダウンロードURLに変換
 def convert_drive_url(url):
@@ -87,6 +90,45 @@ def tokenize_text(text):
     """テキストを単語に分割（簡易版：1文字ずつ）"""
     return list(text)
 
+# Google Sheetsに保存
+def save_to_sheets(annotation):
+    """アノテーション結果をGoogle Sheetsに保存"""
+    try:
+        import gspread
+        from google.oauth2.service_account import Credentials
+        
+        # Streamlit Secretsから認証情報を取得
+        credentials = Credentials.from_service_account_info(
+            st.secrets["gcp_service_account"],
+            scopes=['https://www.googleapis.com/auth/spreadsheets']
+        )
+        gc = gspread.authorize(credentials)
+        
+        # スプレッドシートを開く
+        spreadsheet = gc.open_by_url(RESULT_SHEET_URL)
+        worksheet = spreadsheet.worksheet('全結果')
+        
+        # データを追加
+        row_data = [
+            annotation['annotator'],
+            annotation['dataset'],
+            annotation['filename'],
+            annotation['speaker'],
+            annotation['text'],
+            annotation['emphasized_words'],
+            annotation['emphasized_indices'],
+            annotation['annotated_text'],
+            str(annotation['has_emphasis']),
+            annotation['timestamp']
+        ]
+        
+        worksheet.append_row(row_data)
+        return True
+        
+    except Exception as e:
+        st.error(f"Google Sheets保存エラー: {e}")
+        return False
+
 # セッション状態の初期化
 if 'current_idx' not in st.session_state:
     st.session_state.current_idx = 0
@@ -137,8 +179,8 @@ for name, url in sheet_urls.items():
                 st.session_state.data = data
                 st.session_state.data_loaded = True
                 st.session_state.current_sheet = name
-                st.session_state.current_idx = 0  # 最初から開始
-                st.session_state.annotations = []  # アノテーションリセット
+                st.session_state.current_idx = 0
+                st.session_state.annotations = []
                 st.sidebar.success(f"✅ {name}: {len(data)}件読み込み完了")
                 st.rerun()
 
@@ -386,7 +428,14 @@ else:
                         'timestamp': datetime.now().isoformat()
                     }
                     
+                    # ローカルに保存
                     st.session_state.annotations.append(annotation)
+                    
+                    # Google Sheetsに保存
+                    if save_to_sheets(annotation):
+                        st.success("✅ 保存しました（Google Sheetsに記録）")
+                    else:
+                        st.warning("⚠️ ローカルには保存されましたが、Google Sheets保存に失敗しました")
                     
                     if st.session_state.current_idx < total - 1:
                         st.session_state.current_idx += 1
@@ -437,4 +486,4 @@ else:
         st.info("👈 左のサイドバーからデータセットを選択してください")
 
 st.markdown("---")
-st.caption("JVS強調アノテーションツール v1.0")
+st.caption("JVS強調アノテーションツール v1.1")
