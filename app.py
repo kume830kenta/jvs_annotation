@@ -119,11 +119,11 @@ st.sidebar.subheader("📊 データソース")
 
 # 事前定義されたURL
 sheet_urls = {
-    "JVS①": "https://docs.google.com/spreadsheets/d/1KqfyOWJoHR7V1Bztv_8H5dUeLqf2kCZ_0tdmXPVCPoc/edit?usp=sharing",
-    "JVS②": "https://docs.google.com/spreadsheets/d/1n4-bXPp0kGuOZ9ugoYrcm2JVn5xGRkrbQrCqyQ0ksMA/edit?usp=sharing",
-    "JVS③": "https://docs.google.com/spreadsheets/d/1Z0XD71qcbUh7JzJUs0Dj1Kp3HxAxvR95OQiSB3rix1o/edit?usp=sharing",
-    "JVS④": "https://docs.google.com/spreadsheets/d/1gyCKuFvnkAcpWG1GTi17-pjI9k1EwEpMj8sPD6ZxZhI/edit?usp=sharing",
-    "JVS⑤": "https://docs.google.com/spreadsheets/d/1e5aqmRqit9mH3iVJyB_jjqwiAr27eIAoUl-LUqULzPs/edit?usp=sharing"
+    "JVS①": "https://docs.google.com/spreadsheets/d/19QldMsTxmGg_A1iDoukKk2Nqul-MfN1VPHt5lpNFW9M/edit?usp=sharing",
+    "JVS②": "https://docs.google.com/spreadsheets/d/1eR4I4oa3vhz_6FToVIbFT2vGsYBMx-kpfiNQHDx4C5c/edit?usp=sharing",
+    "JVS③": "https://docs.google.com/spreadsheets/d/1TVBEF8txyznZapG4mt5IeLSM7laORdr3eJkCjVLaH2U/edit?usp=sharing",
+    "JVS④": "https://docs.google.com/spreadsheets/d/1Jr7lnAkAdCrQ8qcHvyOznm-usx8aIFawjWjvDh_fOko/edit?usp=sharing",
+    "JVS⑤": "https://docs.google.com/spreadsheets/d/19-WiHrWYTBzzOO6Vime4RFtc9kiYF7IrzOSnOE-A19E/edit?usp=sharing"
 }
 
 st.sidebar.markdown("**データセットを選択:**")
