@@ -246,7 +246,7 @@ if st.session_state.page == 'instruction':
                 
     また、以下の要素のうち**どれか１つでも**当てはまれば強調としてください。
                 
-    どれにも当てはまらない場合でも、強調されていると感じたならばラベル付けしてください。
+    **どれにも当てはまらない場合でも**、強調されていると感じたならばラベル付けしてください。
                 
     1. **音量が大きい**
     2. **ピッチが高い（または変化が大きい）**
@@ -438,67 +438,54 @@ else:
                 selected_list = [words[i] for i in sorted(st.session_state.selected_words)]
                 st.caption(f"✓ {', '.join(selected_list)}")
         
-        # ボタンエリア
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            if st.button(
-                "⬅️ 前へ",
-                disabled=(st.session_state.current_idx == 0),
-                use_container_width=True
-            ):
-                st.session_state.current_idx -= 1
-                st.session_state.selected_words = set()
-                st.session_state.selecting = False
-                st.session_state.select_start = None
-                st.rerun()
-        
-        with col2:
-            if st.button("💾 保存して次へ", type="primary", use_container_width=True):
-                if text:
-                    selected_indices = sorted(list(st.session_state.selected_words))
-                    emphasized_words = [words[i] for i in selected_indices]
-                    
-                    bracketed_text = ""
-                    for idx, word in enumerate(words):
-                        if idx in st.session_state.selected_words:
-                            bracketed_text += f"[{word}]"
-                        else:
-                            bracketed_text += word
-                    
-                    annotation = {
-                        'annotator': annotator_name,
-                        'gender': gender,
-                        'age': age,
-                        'dataset': st.session_state.current_sheet,
-                        'filename': item.get('filename', 'N/A'),
-                        'speaker': item.get('speaker', 'N/A'),
-                        'text': text,
-                        'emphasized_words': ', '.join(emphasized_words) if emphasized_words else '',
-                        'emphasized_indices': ', '.join(map(str, selected_indices)) if selected_indices else '',
-                        'annotated_text': bracketed_text,
-                        'has_emphasis': len(emphasized_words) > 0,
-                        'timestamp': datetime.now().isoformat()
-                    }
-                    
-                    # ローカルに保存
-                    st.session_state.annotations.append(annotation)
-                    
-                    # Google Sheetsに保存
-                    if save_to_sheets(annotation):
-                        st.success("✅ 保存しました（Google Sheetsに記録）")
+        # ボタンエリア（前へボタン削除）
+        if st.button("💾 保存して次へ", type="primary", use_container_width=True):
+            if text:
+                selected_indices = sorted(list(st.session_state.selected_words))
+                emphasized_words = [words[i] for i in selected_indices]
+                
+                bracketed_text = ""
+                for idx, word in enumerate(words):
+                    if idx in st.session_state.selected_words:
+                        bracketed_text += f"[{word}]"
                     else:
-                        st.warning("⚠️ ローカルには保存されましたが、Google Sheets保存に失敗しました")
-                    
-                    if st.session_state.current_idx < total - 1:
-                        st.session_state.current_idx += 1
-                        st.session_state.selected_words = set()
-                        st.session_state.selecting = False
-                        st.session_state.select_start = None
-                        st.rerun()
-                    else:
-                        st.balloons()
-                        st.success("🎉 完了！")
+                        bracketed_text += word
+                
+                annotation = {
+                    'annotator': annotator_name,
+                    'gender': gender,
+                    'age': age,
+                    'dataset': st.session_state.current_sheet,
+                    'filename': item.get('filename', 'N/A'),
+                    'speaker': item.get('speaker', 'N/A'),
+                    'text': text,
+                    'emphasized_words': ', '.join(emphasized_words) if emphasized_words else '',
+                    'emphasized_indices': ', '.join(map(str, selected_indices)) if selected_indices else '',
+                    'annotated_text': bracketed_text,
+                    'has_emphasis': len(emphasized_words) > 0,
+                    'timestamp': datetime.now().isoformat()
+                }
+                
+                # ローカルに保存
+                st.session_state.annotations.append(annotation)
+                
+                # Google Sheetsに保存
+                if save_to_sheets(annotation):
+                    st.success("✅ 保存しました（Google Sheetsに記録）")
+                else:
+                    st.warning("⚠️ ローカルには保存されましたが、Google Sheets保存に失敗しました")
+                
+                if st.session_state.current_idx < total - 1:
+                    st.session_state.current_idx += 1
+                    st.session_state.selected_words = set()
+                    st.session_state.selecting = False
+                    st.session_state.select_start = None
+                    st.rerun()
+                else:
+                    # 完了画面を表示
+                    st.balloons()
+                    st.success("🎉 このデータセットのアノテーションは完了です。お疲れ様でした。")
+                    st.info("別のデータセットを開始する場合は、左サイドバーから選択してください。")
         
         # サイドバー：エクスポート
         st.sidebar.markdown("---")
@@ -539,4 +526,4 @@ else:
         st.info("👈 左のサイドバーからデータセットを選択してください")
 
 st.markdown("---")
-st.caption("JVS強調アノテーションツール v1.2")
+st.caption("JVS強調アノテーションツール v1.3")
