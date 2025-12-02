@@ -111,6 +111,8 @@ def save_to_sheets(annotation):
         # データを追加
         row_data = [
             annotation['annotator'],
+            annotation['gender'],
+            annotation['age'],
             annotation['dataset'],
             annotation['filename'],
             annotation['speaker'],
@@ -150,11 +152,42 @@ if 'current_sheet' not in st.session_state:
 # サイドバー
 st.sidebar.title("⚙️ 設定")
 
+# アノテーター情報入力
+st.sidebar.subheader("👤 アノテーター情報")
+
 annotator_name = st.sidebar.text_input(
-    "アノテーター名",
-    value="annotator1",
+    "名前",
+    value="",
+    placeholder="ここに名前を入力してください",
     help="あなたの名前またはID"
 )
+
+gender = st.sidebar.selectbox(
+    "性別",
+    options=["選択してください", "男性", "女性", "選択しない"],
+    help="性別を選択してください"
+)
+
+age = st.sidebar.number_input(
+    "年齢",
+    min_value=0,
+    max_value=120,
+    value=0,
+    step=1,
+    help="年齢を入力してください"
+)
+
+# 入力チェック
+info_complete = (
+    annotator_name and annotator_name.strip() != "" and
+    gender != "選択してください" and
+    age > 0
+)
+
+if not info_complete:
+    st.sidebar.warning("⚠️ 全ての情報を入力してください")
+
+st.sidebar.markdown("---")
 
 # Google Sheetsデータセット選択
 st.sidebar.subheader("📊 データソース")
@@ -248,7 +281,10 @@ if st.session_state.page == 'instruction':
     
     ## 準備
     
-    1. 左サイドバーにアノテーター名を入力
+    1. 左サイドバーにアノテーター情報を入力
+       - 名前
+       - 性別
+       - 年齢
     2. JVS①〜⑤のいずれかをクリック
     3. 下のボタンでアノテーション開始
     
@@ -256,9 +292,13 @@ if st.session_state.page == 'instruction':
     
     st.markdown("---")
     
-    if st.button("📝 アノテーション作業を開始", type="primary", use_container_width=True):
-        st.session_state.page = 'annotation'
-        st.rerun()
+    if not info_complete:
+        st.warning("⚠️ 左サイドバーで全ての情報を入力してください")
+        st.button("📝 アノテーション作業を開始", type="primary", use_container_width=True, disabled=True)
+    else:
+        if st.button("📝 アノテーション作業を開始", type="primary", use_container_width=True):
+            st.session_state.page = 'annotation'
+            st.rerun()
 
 else:
     # ========== アノテーションページ ==========
@@ -417,6 +457,8 @@ else:
                     
                     annotation = {
                         'annotator': annotator_name,
+                        'gender': gender,
+                        'age': age,
                         'dataset': st.session_state.current_sheet,
                         'filename': item.get('filename', 'N/A'),
                         'speaker': item.get('speaker', 'N/A'),
@@ -486,4 +528,5 @@ else:
         st.info("👈 左のサイドバーからデータセットを選択してください")
 
 st.markdown("---")
-st.caption("JVS強調アノテーションツール v1.1")
+st.caption("JVS強調アノテーションツール v1.2")
+```
