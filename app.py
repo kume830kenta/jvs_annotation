@@ -198,7 +198,7 @@ sheet_urls = {
     "JVS②": "https://docs.google.com/spreadsheets/d/1eR4I4oa3vhz_6FToVIbFT2vGsYBMx-kpfiNQHDx4C5c/edit?usp=sharing",
     "JVS③": "https://docs.google.com/spreadsheets/d/1TVBEF8txyznZapG4mt5IeLSM7laORdr3eJkCjVLaH2U/edit?usp=sharing",
     "JVS④": "https://docs.google.com/spreadsheets/d/1Jr7lnAkAdCrQ8qcHvyOznm-usx8aIFawjWjvDh_fOko/edit?usp=sharing",
-    "JVS⑤": "https://docs.google.com/spreadsheets/d/19-WiHrWYTBzzOO6Vime4RFtc9kiYF7IrzOSnOE-A19E/edit?usp=sharing"
+    "JVS⑤": "https://docs.google.com/spreadsheets/d/1wlFA2UvCYnu_LqNdV8yzcGgcckifwSD6wZ4FJKe7OOE/edit?usp=sharing"
 }
 
 st.sidebar.markdown("**データセットを選択:**")
