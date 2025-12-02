@@ -529,4 +529,3 @@ else:
 
 st.markdown("---")
 st.caption("JVS強調アノテーションツール v1.2")
-```
