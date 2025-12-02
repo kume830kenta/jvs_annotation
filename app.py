@@ -273,23 +273,31 @@ if st.session_state.page == 'instruction':
         - データセット間で休憩を取ったり、日を改めて作業しても構いません
         - 作業を再開する際は、アノテーター情報を再度入力してください
                 
-    ---
-                
+   ---
+
     ## ラベル付けについて
 
     - **文字数に制限はありません**
-        - 1文字でも、複数文字でも、文全体でも構いません
+    - 1文字でも、複数文字でも、文全体でも構いません
     
     - **連続している必要はありません**
-        - 飛び飛びで選択しても大丈夫です
+    - 飛び飛びで選択しても大丈夫です
 
     **例:**
 
-    1. 連続した選択: 「今日はいい[天気]ですね」
-    2. 1文字のみ: 「今日[は]いい天気ですね」
-    3. 複数箇所(飛び飛び): 「[今日]はいい[天気]ですね」
+    <div style='font-size: 18px; line-height: 2;'>
 
-    ---            
+    1. 連続した選択: 今日はいい<span style='color: red; font-weight: bold;'>[天気]</span>ですね
+
+    2. 1文字のみ: 今日はいい<span style='color: red; font-weight: bold;'>[天]</span>気ですね
+
+    3. 飛び飛びの選択: <span style='color: red; font-weight: bold;'>[今]</span><span style='color: red; font-weight: bold;'>[日]</span>はいい<span style='color: red; font-weight: bold;'>[天]</span><span style='color: red; font-weight: bold;'>[気]</span>ですね
+
+    4. 複数箇所: <span style='color: red; font-weight: bold;'>[今日]</span>はいい<span style='color: red; font-weight: bold;'>[天気]</span>ですね
+
+    </div>
+
+    ---          
     
     ## 作業の流れ
     
